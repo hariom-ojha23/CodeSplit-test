@@ -38,25 +38,34 @@ app.use(
 )
 
 async function getAllConnectedClients(roomId) {
-  return new Promise(async (resolve) => {
-    const arr = Array.from(io.sockets.adapter.rooms.get(roomId) || [])
-    const res = []
-    for (let i = 0; i < arr.length; i++) {
-      const username = await redisClient.get(arr[i])
-      res.push({
-        socketId: arr[i],
-        username,
-      })
+  return new Promise(async (resolve, reject) => {
+    try {
+      const arr = Array.from(io.sockets.adapter.rooms.get(roomId) || [])
+      const res = []
+      for (let i = 0; i < arr.length; i++) {
+        await redisClient
+          .get(arr[i])
+          .then((username) => {
+            res.push({
+              socketId: arr[i],
+              username,
+            })
+          })
+          .catch((err) => console.log('cannot get user from redis', err))
+      }
+      resolve(res)
+    } catch (error) {
+      reject(error)
     }
-
-    resolve(res)
   })
 }
 
 io.on('connection', (socket) => {
   console.log('connection request recieved')
   socket.on(Actions.JOIN, async ({ roomId, username }) => {
-    await redisClient.set(socket.id, username)
+    await redisClient
+      .set(socket.id, username)
+      .catch((error) => console.log('cannot set username to redis', error))
 
     console.log('username', username, 'roomid', roomId)
     socket.join(roomId)
@@ -97,7 +106,9 @@ io.on('connection', (socket) => {
       })
     })
 
-    await redisClient.del(socket.id)
+    await redisClient
+      .del(socket.id)
+      .catch((err) => console.log('cannot delete a key from redis', error))
     socket.leave()
   })
 })
