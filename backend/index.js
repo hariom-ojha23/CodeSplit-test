@@ -71,16 +71,18 @@ io.on('connection', (socket) => {
     socket.join(roomId)
 
     // getting list of all client and notifying that someone joined the room
-    await getAllConnectedClients(roomId).then((clients) => {
-      console.log(clients)
-      clients.forEach(({ socketId }) => {
-        io.to(socketId).emit(Actions.JOINED, {
-          clients,
-          username,
-          socketId: socket.id,
+    await getAllConnectedClients(roomId)
+      .then((clients) => {
+        console.log(clients)
+        clients.forEach(({ socketId }) => {
+          io.to(socketId).emit(Actions.JOINED, {
+            clients,
+            username,
+            socketId: socket.id,
+          })
         })
       })
-    })
+      .catch((err) => console.log('cannot get all clients', err))
 
     console.log('joined listener finished')
   })
