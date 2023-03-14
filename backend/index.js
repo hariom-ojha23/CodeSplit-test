@@ -6,11 +6,17 @@ const { Server } = require('socket.io')
 const Actions = require('./utils/actions')
 const redis = require('redis')
 
-const { endpointUri, password } = require('./config').redis
+const { endpointUri, password, port } = require('./config').redis
 
 dotenv.config()
 
-const redisClient = redis.createClient(`redis://${endpointUri}`, { password })
+const redisClient = redis.createClient({
+  socket: {
+    host: endpointUri,
+    port: port,
+  },
+  password: password,
+})
 redisClient
   .connect()
   .then(() => console.log('connected to redis'))
