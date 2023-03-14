@@ -54,12 +54,16 @@ async function getAllConnectedClients(roomId) {
 }
 
 io.on('connection', (socket) => {
+  console.log('connection request recieved')
   socket.on(Actions.JOIN, async ({ roomId, username }) => {
     await redisClient.set(socket.id, username)
+
+    console.log('username', username, 'roomid', roomId)
     socket.join(roomId)
 
     // getting list of all client and notifying that someone joined the room
     await getAllConnectedClients(roomId).then((clients) => {
+      console.log(clients)
       clients.forEach(({ socketId }) => {
         io.to(socketId).emit(Actions.JOINED, {
           clients,
@@ -68,6 +72,8 @@ io.on('connection', (socket) => {
         })
       })
     })
+
+    console.log('joined listener finished')
   })
 
   // listening for code changes
