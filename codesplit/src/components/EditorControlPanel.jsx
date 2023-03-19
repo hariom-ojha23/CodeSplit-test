@@ -1,74 +1,56 @@
-import React, { useContext } from 'react'
+import React, { useState } from 'react'
 import { Tooltip } from 'react-tooltip'
-import Select from 'react-select'
-import { tabSizes, themes, languages } from '../utils/settingsOptions'
-import { EditorSettingsContext } from '../context/editorSettings'
+import ControlPanelListItem from './ControlPanelListItem'
+import EditorSettingsControl from './EditorSettingsControl'
+import MessagesContainer from './MessagesContainer'
 
 const EditorControlPanel = (props) => {
-  const { setEditorTheme, setEditorTabSize, setEditorLanguage } = useContext(
-    EditorSettingsContext
-  )
+  const [selectedItem, setSelectedItem] = useState(0)
+
+  function handleClick(index) {
+    if (props.controlPanel === 'open') setSelectedItem(index)
+    else {
+      setSelectedItem(index)
+      props.toggleControlPanel()
+    }
+  }
 
   return (
     <React.Fragment>
       <div className='editor-controls'>
         <ul className='controls-list'>
-          <li
-            data-tooltip-id='editor-tooltip'
-            data-tooltip-content='Settings'
-            data-tooltip-place='left'
-            className='controls-list-item'
-            onClick={props.toggleControlPanel}
-          >
-            <i className='fa-solid fa-gear'></i>
-          </li>
-          <li
-            data-tooltip-id='editor-tooltip'
-            data-tooltip-content='Download'
-            data-tooltip-place='left'
-            className='controls-list-item'
+          <ControlPanelListItem
+            content='Settings'
+            place='left'
+            icon='fa-solid fa-gear'
+            onClick={() => handleClick(0)}
+          />
+          <ControlPanelListItem
+            content='Download'
+            place='left'
+            icon='fa-solid fa-download'
             onClick={props.downloadFile}
-          >
-            <i className='fa-solid fa-download'></i>
-          </li>
-          <li
-            data-tooltip-id='editor-tooltip'
-            data-tooltip-content='Upload'
-            data-tooltip-place='left'
-            className='controls-list-item'
-          >
-            <i className='fa-solid fa-upload'></i>
-          </li>
+          />
+          <ControlPanelListItem
+            content='Upload'
+            place='left'
+            icon='fa-solid fa-upload'
+          />
+          <ControlPanelListItem
+            content='Chats'
+            place='left'
+            icon='fa-solid fa-comments'
+            onClick={() => handleClick(3)}
+          />
         </ul>
       </div>
       <div className='control-sidebar'>
         <div className='close-btn-container' onClick={props.toggleControlPanel}>
           <i className='fa-solid fa-xmark'></i>
         </div>
-        <h2 className='control-sidebar-title'>Settings</h2>
-        <div className='settings-form-container'>
-          <label className='setting-form-label'>Language</label>
-          <Select
-            defaultValue={languages[42]}
-            onChange={(language) => setEditorLanguage(language.value)}
-            className='setting-form-select'
-            options={languages}
-          />
-          <label className='setting-form-label'>Theme</label>
-          <Select
-            defaultValue={themes[12]}
-            onChange={(theme) => setEditorTheme(theme.value)}
-            className='setting-form-select'
-            options={themes}
-          />
-          <label className='setting-form-label'>Tab Size</label>
-          <Select
-            defaultValue={tabSizes[0]}
-            onChange={(size) => setEditorTabSize(size.value)}
-            className='setting-form-select'
-            options={tabSizes}
-          />
-        </div>
+
+        {selectedItem === 0 && <EditorSettingsControl />}
+        {selectedItem === 3 && <MessagesContainer roomId={props.roomId} />}
       </div>
       <Tooltip id='editor-tooltip' />
     </React.Fragment>

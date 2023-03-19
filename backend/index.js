@@ -9,13 +9,14 @@ const redis = require('redis')
 const { host, password, port } = require('./config').redis
 
 dotenv.config()
+// const redisClient = redis.createClient()
 
 const redisClient = redis.createClient({
   socket: {
     host: host,
     port: port,
   },
-  password: password,
+  // password: password,
 })
 redisClient
   .connect()
@@ -90,6 +91,22 @@ io.on('connection', (socket) => {
   // listening for syncing code on first join
   socket.on(Actions.SYNC_CODE, ({ code, socketId }) => {
     io.to(socketId).emit(Actions.CODE_CHANGE, { code })
+  })
+
+  // listening for incoming messages
+  socket.on(Actions.SEND_MESSAGE, async ({ roomId, message }) => {
+    await redisClient
+      .get(socket.id)
+      .then((sender) => {
+        const res = {
+          socketId: socket.id,
+          sender: sender,
+          message: message,
+        }
+
+        io.to(roomId).emit(Actions.RECEIVE_MESSAGE, res)
+      })
+      .catch((err) => console.log(err))
   })
 
   // listening for disconnecting
