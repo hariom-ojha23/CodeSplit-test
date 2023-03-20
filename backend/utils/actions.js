@@ -6,6 +6,7 @@ const Actions = {
   SYNC_CODE: 'sync-code',
   SEND_MESSAGE: 'send-message',
   RECEIVE_MESSAGE: 'receive-message',
+  SYNC_MESSAGE: 'sync-message',
   LEAVE: 'leave',
 }
 

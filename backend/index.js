@@ -61,6 +61,8 @@ async function getAllConnectedClients(roomId) {
   })
 }
 
+let chatMessages = []
+
 io.on('connection', (socket) => {
   socket.on(Actions.JOIN, async ({ roomId, username }) => {
     await redisClient
@@ -99,14 +101,20 @@ io.on('connection', (socket) => {
       .get(socket.id)
       .then((sender) => {
         const res = {
-          socketId: socket.id,
+          id: socket.id,
           sender: sender,
           message: message,
         }
 
-        io.to(roomId).emit(Actions.RECEIVE_MESSAGE, res)
+        chatMessages.push(res)
+        io.to(roomId).emit(Actions.RECEIVE_MESSAGE, chatMessages)
       })
       .catch((err) => console.log(err))
+  })
+
+  // listening for syncing messages on first join
+  socket.on(Actions.SYNC_MESSAGE, ({ socketId }) => {
+    io.to(socketId).emit(Actions.RECEIVE_MESSAGE, chatMessages)
   })
 
   // listening for disconnecting
@@ -122,7 +130,9 @@ io.on('connection', (socket) => {
 
     await redisClient
       .del(socket.id)
-      .catch((err) => console.log('cannot delete a key from redis', error))
+      .catch((err) => console.log('cannot delete a key from redis', err))
+
+    chatMessages = []
     socket.leave()
   })
 })

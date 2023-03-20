@@ -8,24 +8,7 @@ const MessagesContainer = (props) => {
   const [message, setMessage] = useState('')
 
   const { socketUserRef } = useContext(SocketUserContext)
-  const { messageList, setMessageList } = useContext(ChatMessageContext)
-
-  useEffect(() => {
-    if (socketUserRef.current) {
-      socketUserRef.current.on(
-        Actions.RECEIVE_MESSAGE,
-        ({ socketId, message, sender }) => {
-          let messages = messageList
-          messages.push({ id: socketId, message, sender })
-          setMessageList([...messages])
-        }
-      )
-
-      return () => {
-        socketUserRef.current.off(Actions.RECEIVE_MESSAGE)
-      }
-    }
-  }, [socketUserRef.current])
+  const { messageList } = useContext(ChatMessageContext)
 
   function onClickSend() {
     if (socketUserRef && socketUserRef.current) {
