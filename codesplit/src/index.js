@@ -7,12 +7,18 @@ import App from './App'
 import reportWebVitals from './reportWebVitals'
 import { BrowserRouter } from 'react-router-dom'
 import EditorSettingsProvider from './context/editorSettings'
+import ChatMessageProvider from './context/ChatMessages'
+import SocketUserProvider from './context/SocketUserContext'
 
 const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(
   <BrowserRouter>
     <EditorSettingsProvider>
-      <App />
+      <SocketUserProvider>
+        <ChatMessageProvider>
+          <App />
+        </ChatMessageProvider>
+      </SocketUserProvider>
     </EditorSettingsProvider>
   </BrowserRouter>
 )

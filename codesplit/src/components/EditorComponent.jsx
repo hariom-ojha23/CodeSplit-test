@@ -238,4 +238,4 @@ const EditorComponent = ({ roomId, socketRef, onCodeChange }) => {
   return <textarea name='' id='realtime-editor' cols='30' rows='10'></textarea>
 }
 
-export default EditorComponent
+export default React.memo(EditorComponent)

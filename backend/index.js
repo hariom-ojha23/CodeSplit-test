@@ -60,20 +60,19 @@ async function getAllConnectedClients(roomId) {
   })
 }
 
+let chatMessages = []
+
 io.on('connection', (socket) => {
-  console.log('connection request recieved')
   socket.on(Actions.JOIN, async ({ roomId, username }) => {
     await redisClient
       .set(socket.id, username)
       .catch((error) => console.log('cannot set username to redis', error))
 
-    console.log('username', username, 'roomid', roomId)
     socket.join(roomId)
 
     // getting list of all client and notifying that someone joined the room
     await getAllConnectedClients(roomId)
       .then((clients) => {
-        console.log(clients)
         clients.forEach(({ socketId }) => {
           io.to(socketId).emit(Actions.JOINED, {
             clients,
@@ -83,8 +82,6 @@ io.on('connection', (socket) => {
         })
       })
       .catch((err) => console.log('cannot get all clients', err))
-
-    console.log('joined listener finished')
   })
 
   // listening for code changes
@@ -95,6 +92,28 @@ io.on('connection', (socket) => {
   // listening for syncing code on first join
   socket.on(Actions.SYNC_CODE, ({ code, socketId }) => {
     io.to(socketId).emit(Actions.CODE_CHANGE, { code })
+  })
+
+  // listening for incoming messages
+  socket.on(Actions.SEND_MESSAGE, async ({ roomId, message }) => {
+    await redisClient
+      .get(socket.id)
+      .then((sender) => {
+        const res = {
+          id: socket.id,
+          sender: sender,
+          message: message,
+        }
+
+        chatMessages.push(res)
+        io.to(roomId).emit(Actions.RECEIVE_MESSAGE, chatMessages)
+      })
+      .catch((err) => console.log(err))
+  })
+
+  // listening for syncing messages on first join
+  socket.on(Actions.SYNC_MESSAGE, ({ socketId }) => {
+    io.to(socketId).emit(Actions.RECEIVE_MESSAGE, chatMessages)
   })
 
   // listening for disconnecting
@@ -110,7 +129,9 @@ io.on('connection', (socket) => {
 
     await redisClient
       .del(socket.id)
-      .catch((err) => console.log('cannot delete a key from redis', error))
+      .catch((err) => console.log('cannot delete a key from redis', err))
+
+    chatMessages = []
     socket.leave()
   })
 })

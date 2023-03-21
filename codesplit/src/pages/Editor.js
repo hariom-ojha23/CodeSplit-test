@@ -1,4 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useContext,
+} from 'react'
 import { useLocation, useNavigate, Navigate, useParams } from 'react-router-dom'
 import Actions from '../utils/actions'
 import ClientItem from '../components/ClientItem'
@@ -7,11 +13,15 @@ import EditorControlPanel from '../components/EditorControlPanel'
 import { initSocket } from '../utils/socket'
 import toast from 'react-hot-toast'
 
+import { SocketUserContext } from '../context/SocketUserContext'
+import { ChatMessageContext } from '../context/ChatMessages'
+
 const Editor = () => {
   const [clients, setClients] = useState([])
-  const [controlPanel, setControlPanel] = useState(
-    'controlPanelContainer close'
-  )
+  const [controlPanel, setControlPanel] = useState('close')
+
+  const { setSocketUserRef } = useContext(SocketUserContext)
+  const { setMessageList } = useContext(ChatMessageContext)
 
   const location = useLocation()
   const { roomId } = useParams()
@@ -23,6 +33,7 @@ const Editor = () => {
   useEffect(() => {
     const init = async () => {
       socketRef.current = await initSocket()
+      setSocketUserRef(socketRef.current)
       socketRef.current.on('connect_error', (err) => handleErrors(err))
       socketRef.current.on('connect_failed', (err) => handleErrors(err))
 
@@ -47,8 +58,19 @@ const Editor = () => {
             code: codeRef.current,
             socketId,
           })
+
+          // sending code change event to sync editor on joining
+          socketRef.current.emit(Actions.SYNC_MESSAGE, {
+            socketId,
+          })
         }
       )
+
+      // listening for setting messages when join
+      socketRef.current.on(Actions.RECEIVE_MESSAGE, (messageArr) => {
+        console.log(messageArr)
+        setMessageList([...messageArr])
+      })
 
       // listening for disconnected event
       socketRef.current.on(Actions.DISCONNECTED, ({ socketId, username }) => {
@@ -65,6 +87,8 @@ const Editor = () => {
       socketRef.current.disconnect()
       socketRef.current.off(Actions.JOINED)
       socketRef.current.off(Actions.DISCONNECTED)
+      socketRef.current.off(Actions.RECEIVE_MESSAGE)
+      setMessageList([])
     }
   }, [])
 
@@ -88,10 +112,10 @@ const Editor = () => {
   }
 
   const toggleControlPanel = useCallback(() => {
-    if (controlPanel === 'controlPanelContainer close') {
-      setControlPanel('controlPanelContainer open')
+    if (controlPanel === 'close') {
+      setControlPanel('open')
     } else {
-      setControlPanel('controlPanelContainer close')
+      setControlPanel('close')
     }
   }, [controlPanel])
 
@@ -157,10 +181,13 @@ const Editor = () => {
         />
       </div>
 
-      <div className={controlPanel}>
+      <div className={`controlPanelContainer ${controlPanel}`}>
         <EditorControlPanel
           toggleControlPanel={toggleControlPanel}
+          controlPanel={controlPanel}
           downloadFile={downloadFile}
+          socketRef={socketRef}
+          roomId={roomId}
         />
       </div>
     </div>
